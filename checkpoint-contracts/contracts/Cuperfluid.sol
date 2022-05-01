@@ -7,12 +7,12 @@ import {ISuperfluid, ISuperToken, ISuperApp, ISuperAgreement, SuperAppDefinition
 import {IConstantFlowAgreementV1} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol";
 import {SuperAppBase} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 
-contract Cuperfluid is ChainlinkClient, SuperAppBase, BaseRelayRecipient {
+contract Test is ChainlinkClient, SuperAppBase, BaseRelayRecipient {
 	using Chainlink for Chainlink.Request;
 
 	uint96 public id;
 
-	// cuperfluid stream object
+	// test stream object
 	struct Stream {
 		uint96 id;
 		address sender;

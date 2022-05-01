@@ -1,12 +1,12 @@
 const ethers = require("ethers");
 require("dotenv").config();
 const {Biconomy} = require("@biconomy/mexa");
-const Cuperfluid = require("../artifacts/contracts/Cuperfluid.sol/Cuperfluid.json");
+const Test = require("../artifacts/contracts/Test.sol/Test.json");
 
 async function main() {
 	const privateKey = process.env.PRIVATE_KEY;
 	const apiKey = process.env.BICONOMY_API_KEY;
-	const cuperfluidContractAddress = process.env.CUPERFLUID_CONTRACT_ADDRESS;
+	const testContractAddress = process.env.TEST_CONTRACT_ADDRESS;
 	const userAddress = process.env.USER_ADDRESS;
 	const fDAIx = "0x5D8B4C2554aeB7e86F387B4d6c00Ac33499Ed01f";
 	const receiver = "0xdA7773E91a396d592AD33146164dA6d7d2Fda9B6";
@@ -31,13 +31,13 @@ async function main() {
 				console.log("in ready....");
 				// Initialize Constants
 				const contract = new ethers.Contract(
-					cuperfluidContractAddress,
-					Cuperfluid.abi,
+					testContractAddress,
+					Test.abi,
 					biconomy.getSignerByAddress(address)
 				);
 
 				const contractInterface = new ethers.utils.Interface(
-					Cuperfluid.abi
+					Test.abi
 				);
 
 				const functionSignature = contractInterface.encodeFunctionData(
@@ -52,7 +52,7 @@ async function main() {
 					]
 				);
 				const rawTx = {
-					to: cuperfluidContractAddress,
+					to: testContractAddress,
 					data: functionSignature,
 					from: address,
 				};

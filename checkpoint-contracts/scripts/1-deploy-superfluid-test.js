@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
-	const Cuperfluid = await hre.ethers.getContractFactory("Cuperfluid");
+	const Test = await hre.ethers.getContractFactory("Test");
 	const host = "0xEB796bdb90fFA0f28255275e16936D25d3418603";
 	const cfa = "0x49e565Ed1bdc17F3d220f72DF0857C26FA83F873";
-	const cuperfluid = await Cuperfluid.deploy(host, cfa);
-	await cuperfluid.deployed();
-	console.log("Cuperfluid deployed to: ", cuperfluid.address);
+	const test = await Test.deploy(host, cfa);
+	await test.deployed();
+	console.log("Test deployed to: ", test.address);
 }
 
 main()

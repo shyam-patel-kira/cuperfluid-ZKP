@@ -5,7 +5,7 @@ const {Biconomy} = require("@biconomy/mexa");
 // artifacts
 const SuperfluidArtifact = require("./../artifacts/@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol/ISuperfluid.json");
 const CfaArtifact = require("./../artifacts/@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IConstantFlowAgreementV1.sol/IConstantFlowAgreementV1.json");
-const CuperfluidArtifact = require("../artifacts/contracts/Cuperfluid.sol/Cuperfluid.json");
+const TestArtifact = require("../artifacts/contracts/Test.sol/Test.json");
 
 const indexes = {
 	0: "id",
@@ -31,7 +31,7 @@ async function main() {
 	const privateKey = process.env.USER_PRIVATE_KEY || "";
 	const apiKey = process.env.BICONOMY_API_KEY;
 	const userAddress = process.env.USER_ADDRESS;
-	const cuperfluidContractAddress = process.env.CUPERFLUID_CONTRACT_ADDRESS;
+	const testContractAddress = process.env.TEST_CONTRACT_ADDRESS;
 	const receiver = process.env.RECEIVER_ADDRESS;
 	const endpoint = process.env.BACKEND_ENDPOINT || "https://secure-fortress-91179.herokuapp.com/validate";
 	// constant addresses
@@ -50,16 +50,16 @@ async function main() {
 	);
 	const wallet = new ethers.Wallet(privateKey, provider);
 
-	// 1. Get the deployed cuperfluid contract
-	console.log("Getting the Cuperfluid Deployed Contract");
-	const cuperfluidContract = new ethers.Contract(
-		cuperfluidContractAddress,
-		CuperfluidArtifact.abi,
+	// 1. Get the deployed test contract
+	console.log("Getting the Test Deployed Contract");
+	const testContract = new ethers.Contract(
+		testContractAddress,
+		TestArtifact.abi,
 		wallet
 	);
 	console.log(
-		"Linked with Cuperfluid contract deployed at",
-		cuperfluidContractAddress
+		"Linked with Test contract deployed at",
+		testContractAddress
 	);
 
 	// 2. Create a new stream to contract address (from sender)
@@ -77,13 +77,13 @@ async function main() {
 		"0x",
 	]);
 
-	console.log("Creating a constant stream to the cuperfluid contract");
+	console.log("Creating a constant stream to the test contract");
 	console.log("Parameters...");
 	console.log("`token`:", fDAIx);
 	console.log(
 		"`receiver`:",
-		cuperfluidContractAddress,
-		"(the cuperfluid contract)"
+		testContractAddress,
+		"(the test contract)"
 	);
 	console.log("`flowRate`:", flowRate, "tokens/sec");
 	console.log("UserData:", "0x");
@@ -94,9 +94,9 @@ async function main() {
 	);
 	console.log("Waiting for transaction to mine");
 	await tx.wait();
-	console.log("Success: Created stream to cuperfluid contract");
+	console.log("Success: Created stream to test contract");
 
-	// 3. Call `createStream` method of cuperfluid contract
+	// 3. Call `createStream` method of test contract
 	// Biconomy Integration
 	const biconomy = new Biconomy(provider, {apiKey: apiKey, debug: true});
 	let ethersProvider = new ethers.providers.Web3Provider(biconomy);
@@ -105,15 +105,15 @@ async function main() {
 			try {
 				console.log("IN BICONOMY READY EVENT");
 				const contract = new ethers.Contract(
-					cuperfluidContractAddress,
-					CuperfluidArtifact.abi,
+					testContractAddress,
+					TestArtifact.abi,
 					biconomy.getSignerByAddress(userAddress)
 				);
 				const contractInterface = new ethers.utils.Interface(
-					CuperfluidArtifact.abi
+					TestArtifact.abi
 				);
 				console.log(
-					"Calling `createStream` method of cuperfluid contract"
+					"Calling `createStream` method of test contract"
 				);
 				console.log("Parameters...");
 				console.log("`receiver`:", receiver, "(the original receiver)");
@@ -134,7 +134,7 @@ async function main() {
 					]
 				);
 				const rawTx = {
-					to: cuperfluidContractAddress,
+					to: testContractAddress,
 					data: functionSignature,
 					from: userAddress,
 				};
@@ -167,7 +167,7 @@ async function main() {
 				const receipt = await biconomyProvider.waitForTransaction(
 					txHash
 				);
-				console.log("Success: Created Cuperfluid Stream");
+				console.log("Success: Created Test Stream");
 			} catch (error) {
 				console.log("Error in biconomy execution:", error);
 			}
@@ -178,20 +178,20 @@ async function main() {
 
 	// 4. Add listeners
 	// Stream Creation Event
-	cuperfluidContract.on("StreamCreated", async (id, stream) => {
+	testContract.on("StreamCreated", async (id, stream) => {
 		try {
-			console.log("New Stream Register to Cuperfluid Contract");
+			console.log("New Stream Register to Test Contract");
 			console.log("Parameters...");
 			console.log("`id`:", id);
 			console.log("`stream`:", stream);
-			checkForProofOfWork(cuperfluidContract, id, stream);
+			checkForProofOfWork(testContract, id, stream);
 		} catch (error) {
 			console.log("ERROR in Event StreamCreated Listener...", error);
 		}
 	});
 
 	// Fetch Proof Of Work Event
-	cuperfluidContract.on(
+	testContract.on(
 		"ProofOfWorkRequested",
 		async (requestId, id, iteration) => {
 			try {
@@ -202,7 +202,7 @@ async function main() {
 				// fetch the result from the request id
 				// true => work done
 				// false => work not done
-				const result = await cuperfluidContract.fetchProofOfWorkResult(
+				const result = await testContract.fetchProofOfWorkResult(
 					requestId
 				);
 				console.log(
@@ -211,7 +211,7 @@ async function main() {
 				);
 
 				// fetch the stream at this moment to check it's status
-				const stream = await cuperfluidContract.getStreamById(id);
+				const stream = await testContract.getStreamById(id);
 
 				if (result == true && stream[11] == false) {
 					// work done, but stream is inactive
@@ -221,7 +221,7 @@ async function main() {
 						"Activating the Stream (from contract to original receiver)"
 					);
 					const activateStreamTx =
-						await cuperfluidContract.createSuperfluidStream(
+						await testContract.createSuperfluidStream(
 							id,
 							receiver,
 							flowRate,
@@ -236,7 +236,7 @@ async function main() {
 						"Deactivating the Stream (from contract to original receiver)"
 					);
 					const deactivateStreamTx =
-						await cuperfluidContract.deleteSuperfluidStream(
+						await testContract.deleteSuperfluidStream(
 							id,
 							receiver,
 							fDAIx
@@ -260,24 +260,24 @@ async function main() {
 	);
 
 	// on stream activation (temporary)
-	cuperfluidContract.on("StreamActivated", async (id) => {
+	testContract.on("StreamActivated", async (id) => {
 		console.log("Stream with ID:", id, "activated!");
 	});
 
 	// on stream deactivation (temporary)
-	cuperfluidContract.on("StreamDeactivated", async (id) => {
+	testContract.on("StreamDeactivated", async (id) => {
 		console.log("Stream with ID:", id, "deactivated!");
 	});
 
 	// on stream deletion (permanant)
-	cuperfluidContract.on("DeleteStream", async (id) => {
+	testContract.on("DeleteStream", async (id) => {
 		try {
 			// delete the stream
 			console.log("All iterations finished...");
 			endStream = true;
 
 			// fetch the stream at this moment to check it's status
-			const stream = await cuperfluidContract.getStreamById(id);
+			const stream = await testContract.getStreamById(id);
 
 			// only delete if active
 			if (stream.isActive == true) {
@@ -285,7 +285,7 @@ async function main() {
 					"Deleting stream from contract to receiver (original)"
 				);
 				const deactivateStreamTx =
-					await cuperfluidContract.deleteSuperfluidStream(
+					await testContract.deleteSuperfluidStream(
 						id,
 						receiver,
 						fDAIx
@@ -297,16 +297,16 @@ async function main() {
 			console.log("Deleting stream from sender to contract");
 			const deleteFlowSelector = cfaInterface.encodeFunctionData(
 				"deleteFlow",
-				[fDAIx, userAddress, cuperfluidContractAddress, "0x"]
+				[fDAIx, userAddress, testContractAddress, "0x"]
 			);
-			console.log("Deleting stream to the cuperfluid contract");
+			console.log("Deleting stream to the test contract");
 			console.log("Parameters...");
 			console.log("`token`:", fDAIx);
 			console.log("`sender`:", userAddress, "(the user)");
 			console.log(
 				"`receiver`:",
-				cuperfluidContractAddress,
-				"(the cuperfluid contract)"
+				testContractAddress,
+				"(the test contract)"
 			);
 			console.log("UserData:", "0x");
 			const deleteStreamTx = await superfluidContract.callAgreement(
@@ -316,7 +316,7 @@ async function main() {
 			);
 			console.log("Waiting for transaction to mine");
 			await deleteStreamTx.wait();
-			console.log("Success: Deleted stream to cuperfluid contract");
+			console.log("Success: Deleted stream to test contract");
 
 			// TODO: refund the remaining funds from contract to the origin sender back
 		} catch (error) {
@@ -325,7 +325,7 @@ async function main() {
 	});
 }
 
-async function checkForProofOfWork(cuperfluidContract, _id, _stream) {
+async function checkForProofOfWork(testContract, _id, _stream) {
 	try {
 		const checkpointInterval = parseInt(_stream[6]._hex, 16); // only get the interval for now
 		console.log("The checkpoint interval is:", checkpointInterval);
@@ -349,7 +349,7 @@ async function checkForProofOfWork(cuperfluidContract, _id, _stream) {
 				clearInterval(interval);
 			}
 			// call `fetchProofOfWork` function
-			let fetchPoWTx = await cuperfluidContract.fetchProofOfWork(_id);
+			let fetchPoWTx = await testContract.fetchProofOfWork(_id);
 			console.log("Waiting for transaction to mine");
 			await fetchPoWTx.wait();
 			console.log("Execution Complete, waiting for event listener");
